@@ -10,10 +10,19 @@ import {SIG_VALIDATION_SUCCESS, SIG_VALIDATION_FAILED} from "lib/account-abstrac
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 
 contract MinimalAccount is IAccount, Ownable {
+    ////////////////////////////
+    ////////Errors//////////////
+    ////////////////////////////
     error MinimalAccount__NotFromEntryPoint();
 
+    ////////////////////////////
+    ////////State variable//////
+    ////////////////////////////
     IEntryPoint private immutable i_entryPoint;
 
+    ////////////////////////////
+    ////////Modifiers///////////
+    ////////////////////////////
     modifier fromEntryPoint() {
         if (msg.sender != address(i_entryPoint)) {
             revert MinimalAccount__NotFromEntryPoint();
@@ -21,10 +30,23 @@ contract MinimalAccount is IAccount, Ownable {
         _;
     }
 
+    ////////////////////////////
+    ////////Functions///////////
+    ////////////////////////////
     constructor(address entryPoint) Ownable(msg.sender) {
         i_entryPoint = IEntryPoint(entryPoint);
     }
 
+    ////////////////////////////
+    ////External Functions//////
+    ////////////////////////////
+
+    /**
+     *
+     * @param userOp The user operation struct which contains details of the transaction
+     * @param userOpHash The hash of the struct which contains signature of msg.sender
+     * @param missingAccountFunds the money to pay the entry point contract
+     */
     function validateUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
         external
         fromEntryPoint
@@ -35,7 +57,15 @@ contract MinimalAccount is IAccount, Ownable {
         _payPrefund(missingAccountFunds); //to pay the entrypoint contract
     }
 
-    //userOpHash fed to this function is the EIP 191 version of the signed hash, this needs to be converted to a normal hash
+    ////////////////////////////
+    /////Internal Functions/////
+    ////////////////////////////
+    /**
+     *
+     * @param userOp The packed user operation which contains the AA transaction details
+     * @param userOpHash The hashed version of the userOp which contains signature of the sender
+     * @notice userOpHash fed to this function is the EIP 191 version of the signed hash, this needs to be converted to a normal hash
+     */
     function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         internal
         view
@@ -50,6 +80,10 @@ contract MinimalAccount is IAccount, Ownable {
         return SIG_VALIDATION_SUCCESS;
     }
 
+    /**
+     * @notice This function is for paying the EntryPoint contract money from our smart account
+     * @param missingAccountFunds to pay the EntryPoint contract for the transaction
+     */
     function _payPrefund(uint256 missingAccountFunds) internal {
         if (missingAccountFunds != 0) {
             (bool success,) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
@@ -57,7 +91,12 @@ contract MinimalAccount is IAccount, Ownable {
         }
     }
 
-    ////// Getters /////
+    /////////////////////////////////
+    ////////View and Pure Functions//
+    /////////////////////////////////
+    /**
+     * @notice returns address of the entry point contract
+     */
     function getEntryPoint() external view returns (address) {
         return address(i_entryPoint);
     }
