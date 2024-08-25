@@ -80,4 +80,33 @@ contract MinimalAccountTest is Test {
         //Assert
         assertEq(actualSigner, minimalAccount.owner());
     }
+
+    //1. Sign the user ops
+    //2. Call validate userops
+    //3. Assert that the return is correct
+    function testValidateUserOps() public {
+        //Arrange
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
+        address dest = address(usdc);
+        uint256 value = 0;
+        //encode the logic to call the target with the function selector
+        bytes memory functionData =
+            abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), MINT_AMOUNT);
+        //encode the logic for entrypoint to call the minimal account to call the target
+        bytes memory executeCallData =
+            abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
+        //generate the signed userOp struct
+        PackedUserOperation memory packedUserOp =
+            sendPackedUserOp.generateSignedUserOperation(executeCallData, helperConfig.getConfig());
+        //hash the struct into EIP 191 version type
+        bytes32 userOphash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
+        uint256 MISSING_ACCOUNT_FUNDS = 1e18;
+        //Act
+        vm.prank(helperConfig.getConfig().entryPoint);
+        uint256 validationData = minimalAccount.validateUserOp(packedUserOp, userOphash, MISSING_ACCOUNT_FUNDS);
+        //Assert
+        assertEq(validationData, 0);
+    }
+
+    //function testEntryPointCanExecuteCommands() public {}
 }
