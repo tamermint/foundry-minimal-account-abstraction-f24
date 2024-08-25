@@ -17,7 +17,8 @@ contract HelperConfig is Script {
     uint256 constant ZKSYNC_SEPOLIA_CHAIN_ID = 300; //zkSync Sepolia testnet
     uint256 constant LOCAL_NETWORK_CHAIN_ID = 31337; //Anvil Testnet Id
     address constant BURNER_WALLET = 0x4aB7C05Ca6281deA5A95C40CD5B11ad0CFA5836E;
-    address constant DEFAULT_FOUNDRY_WALLET = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
+    // address constant DEFAULT_FOUNDRY_WALLET = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
+    address constant DEFAULT_ANVIL_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
     NetworkConfig public localNetworkConfig;
 
@@ -55,10 +56,11 @@ contract HelperConfig is Script {
             return localNetworkConfig;
         }
         console2.log("Deploying mocks...");
-        vm.startBroadcast(DEFAULT_FOUNDRY_WALLET);
+        vm.startBroadcast(DEFAULT_ANVIL_ACCOUNT);
         EntryPoint entrypoint = new EntryPoint();
         vm.stopBroadcast();
         // deploy a mock entry point and return it
-        return NetworkConfig({entryPoint: address(entrypoint), account: DEFAULT_FOUNDRY_WALLET});
+        localNetworkConfig = NetworkConfig({entryPoint: address(entrypoint), account: DEFAULT_ANVIL_ACCOUNT});
+        return localNetworkConfig;
     }
 }
