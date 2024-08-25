@@ -6,11 +6,14 @@ import {MinimalAccount} from "../src/ethereum/MinimalAccount.sol";
 import {DeployMinimal} from "../script/DeployMinimal.s.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {SendPackedUserOperation} from "../script/SendPackedUserOp.s.sol";
 
 contract MinimalAccountTest is Test {
     MinimalAccount public minimalAccount;
     HelperConfig public helperConfig;
     ERC20Mock public usdc;
+    SendPackedUserOperation sendPackedUserOp;
+
     uint256 constant MINT_AMOUNT = 1e18;
 
     address randomUser = makeAddr("random");
@@ -52,4 +55,6 @@ contract MinimalAccountTest is Test {
         vm.expectRevert(MinimalAccount.MinimalAccount__NotFromEntryPointOrOwner.selector);
         minimalAccount.execute(dest, value, functionData);
     }
+
+    function testRecoverSignedOp() public view {}
 }
