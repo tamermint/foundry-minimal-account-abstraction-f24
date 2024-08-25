@@ -72,8 +72,9 @@ contract MinimalAccountTest is Test {
             abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), MINT_AMOUNT);
         bytes memory executeCallData =
             abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
-        PackedUserOperation memory packedUserOp =
-            sendPackedUserOp.generateSignedUserOperation(executeCallData, helperConfig.getConfig());
+        PackedUserOperation memory packedUserOp = sendPackedUserOp.generateSignedUserOperation(
+            executeCallData, helperConfig.getConfig(), address(minimalAccount)
+        );
         bytes32 userOphash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
         //Act
         address actualSigner = ECDSA.recover(userOphash.toEthSignedMessageHash(), packedUserOp.signature);
@@ -96,8 +97,9 @@ contract MinimalAccountTest is Test {
         bytes memory executeCallData =
             abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
         //generate the signed userOp struct
-        PackedUserOperation memory packedUserOp =
-            sendPackedUserOp.generateSignedUserOperation(executeCallData, helperConfig.getConfig());
+        PackedUserOperation memory packedUserOp = sendPackedUserOp.generateSignedUserOperation(
+            executeCallData, helperConfig.getConfig(), address(minimalAccount)
+        );
         //hash the struct into EIP 191 version type
         bytes32 userOphash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
         uint256 MISSING_ACCOUNT_FUNDS = 1e18;
@@ -108,5 +110,33 @@ contract MinimalAccountTest is Test {
         assertEq(validationData, 0);
     }
 
-    //function testEntryPointCanExecuteCommands() public {}
+    function testEntryPointCanExecuteCommands() public {
+        //Arrange
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
+        address dest = address(usdc);
+        uint256 value = 0;
+        //encode the logic to call the target with the function selector
+        bytes memory functionData =
+            abi.encodeWithSelector(ERC20Mock.mint.selector, address(minimalAccount), MINT_AMOUNT);
+        //encode the logic for entrypoint to call the minimal account to call the target
+        bytes memory executeCallData =
+            abi.encodeWithSelector(MinimalAccount.execute.selector, dest, value, functionData);
+        //generate the signed userOp struct
+        PackedUserOperation memory packedUserOp = sendPackedUserOp.generateSignedUserOperation(
+            executeCallData, helperConfig.getConfig(), address(minimalAccount)
+        );
+        //hash the struct into EIP 191 version type
+        //bytes32 userOphash = IEntryPoint(helperConfig.getConfig().entryPoint).getUserOpHash(packedUserOp);
+
+        vm.deal(address(minimalAccount), 1e18);
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = packedUserOp;
+
+        //Act
+        //here we actually test whether a random user can call the entrypoint which handles the rest of the operation i.e. calling the minimal account contract which calls the usdc (here we are using mock erc20) contract
+        vm.prank(randomUser);
+        IEntryPoint(helperConfig.getConfig().entryPoint).handleOps(ops, payable(randomUser));
+        //Assert
+        assertEq(usdc.balanceOf(address(minimalAccount)), MINT_AMOUNT);
+    }
 }
