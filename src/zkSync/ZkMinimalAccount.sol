@@ -102,6 +102,8 @@ contract ZkMinimalAccount is IAccount, Ownable {
         payable
     {}
 
+    receive() external payable {}
+
     /*/////////////////////////////
          INTERNAL FUNCTIONS
     /////////////////////////////*/
