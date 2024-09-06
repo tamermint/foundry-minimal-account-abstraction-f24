@@ -29,6 +29,9 @@ contract ZkMinimalAccountTest is Test {
         //Act
         vm.prank(minimalAccount.owner());
         minimalAccount.executeTransaction(EMPTY_BYTES32, EMPTY_BYTES32, transaction);
+
+        //assert
+        assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
     }
 
     /*/////////////////////////////
